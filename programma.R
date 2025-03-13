@@ -22,3 +22,34 @@ write.table(sl.by.b, file = "results.txt", append = TRUE, sep = "\t", col.names 
 
 # 6. Izveido jaunu kolonnu "Average", kas satur vidējo no "Slope", "Intercept" un "adj.r.squared"
 kordat$Average <- rowMeans(kordat[, c("Slope", "Intercept", "adj.r.squared")])
+
+# 7. Aprēķina standartnovirzi pēc f faktora līmeņiem un izvada to failā
+std_dev_by_f <- aggregate(kordat$Intercept, by = list(kordat$f), FUN = sd)
+colnames(std_dev_by_f) <- c("f_factor", "std_dev")
+write.table(std_dev_by_f, file = "results.txt", append = TRUE, sep = "\t", col.names = NA)
+
+# 8. Atlasīt tikai rindiņas, kur adj.r.squared > 0.7, un saglabā tās prockordat
+tprockordat <- subset(kordat, adj.r.squared > 0.7)
+
+# 9. Pārraksta "Slope" kolonnas vērtību, izmantojot formulu 1 - 1/k
+prockordat$Slope <- 1 - 1/prockordat$Slope
+
+# 10. Izdrukā prockordat datnē results.txt
+write.table(prockordat, file = "results.txt", append = TRUE, sep = "\t", col.names = NA)
+
+# 11. Izveido izkliedes grafiku (MAD vs. Average) un saglabā to scatter.svg
+scatter_plot <- ggplot(kordat, aes(x = MAD, y = Average)) +
+  geom_point() +
+  labs(title = "Scatter plot", x = "MAD", y = "Average")
+ggsave("scatter.svg", plot = scatter_plot)
+
+# 12. Izveido kastu grafiku no "Intercept" datiem, grupējot pēc f faktora, un saglabā to boxplot.svg
+box_plot <- ggplot(kordat, aes(x = f, y = Intercept, fill = f)) +
+  geom_boxplot() +
+  labs(title = "Boxplot by f factor", x = "f Factor", y = "Intercept")
+ggsave("boxplot.svg", plot = box_plot)
+
+# Atrast biežāko faktoru līmeni
+most_common_level <- names(which.max(table(kordat$f)))
+filtered_prockordat <- prockordat[grep(most_common_level, rownames(prockordat)), ]
+print(filtered_prockordat)
